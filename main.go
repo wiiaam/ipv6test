@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html
+//go:embed web/index.gohtml
 var webFS embed.FS
 
 var (
@@ -126,7 +126,7 @@ type pageData struct {
 }
 
 func main() {
-	tmpl := template.Must(template.ParseFS(webFS, "web/index.html"))
+	tmpl := template.Must(template.ParseFS(webFS, "web/index.gohtml"))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", handleHealthz)
