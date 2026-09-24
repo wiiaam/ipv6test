@@ -63,29 +63,9 @@ func familyOf(ip net.IP) string {
 	return "ipv6"
 }
 
-func classify(ip net.IP) (string, bool) {
-	if ip == nil {
-		return "unknown", false
-	}
-	switch {
-	case ip.IsLoopback():
-		return "loopback", false
-	case ip.IsPrivate():
-		return "private", true
-	case ip.IsLinkLocalUnicast():
-		return "link-local", false
-	case ip.IsUnspecified():
-		return "unspecified", false
-	default:
-		return "public", false
-	}
-}
-
 type addr struct {
-	IP      string `json:"ip"`
-	Family  string `json:"family"`
-	Class   string `json:"class"`
-	Private bool   `json:"private"`
+	IP     string `json:"ip"`
+	Family string `json:"family"`
 }
 
 func toAddr(ip net.IP) addr {
@@ -93,8 +73,7 @@ func toAddr(ip net.IP) addr {
 	if ip4 := ip.To4(); ip4 != nil {
 		s = ip4.String()
 	}
-	kind, priv := classify(ip)
-	return addr{IP: s, Family: familyOf(ip), Class: kind, Private: priv}
+	return addr{IP: s, Family: familyOf(ip)}
 }
 
 func handleHealthz(w http.ResponseWriter, r *http.Request) {

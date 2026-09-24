@@ -59,7 +59,6 @@ body {
 @media (prefers-color-scheme: light) { .addr { background: rgba(0,0,0,.04); } }
 .addr .k { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); font-weight: 600; }
 .addr .v { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: clamp(16px, 3.4vw, 24px); font-weight: 700; margin-top: 6px; word-break: break-all; }
-footer { margin-top: 22px; text-align: center; color: var(--muted); font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -75,7 +74,6 @@ footer { margin-top: 22px; text-align: center; color: var(--muted); font-size: 1
         <div class="v">{{ .Client.IP }}{{ if ne .Client.Family "ipv6" }} ({{ .Client.Family }}){{ end }}</div>
       </div>
     </section>
-    <footer>{{ .Client.Class }}{{ if .Client.Private }} / private{{ end }}</footer>
   </main>
 </div>
 </body>
