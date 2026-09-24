@@ -34,17 +34,17 @@ func envBool(key string, def bool) bool {
 	return strings.EqualFold(v, "true")
 }
 
-func pickIP(r *http.Request) net.IP {
+func pickIP(r *http.Request) (net.IP, bool) {
 	if trustProxy {
 		if ff := r.Header.Get("X-Forwarded-For"); ff != "" {
 			first := strings.TrimSpace(strings.Split(ff, ",")[0])
 			if ip := net.ParseIP(first); ip != nil {
-				return ip
+				return ip, true
 			}
 		}
 		if xr := r.Header.Get("X-Real-IP"); xr != "" {
 			if ip := net.ParseIP(xr); ip != nil {
-				return ip
+				return ip, true
 			}
 		}
 	}
@@ -53,7 +53,7 @@ func pickIP(r *http.Request) net.IP {
 		host = strings.Split(r.RemoteAddr, ":")[0]
 	}
 	host = strings.Split(host, "%")[0]
-	return net.ParseIP(host)
+	return net.ParseIP(host), false
 }
 
 func familyOf(ip net.IP) string {
@@ -111,7 +111,13 @@ func middleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		next.ServeHTTP(w, r)
-		log.Printf("%s %s %s from %s (%s) %s", r.Method, r.URL.Path, r.Proto, r.RemoteAddr, familyOf(pickIP(r)), time.Since(start))
+		ip, forwarded := pickIP(r)
+		a := toAddr(ip)
+		src := "direct"
+		if forwarded {
+			src = "forwarded"
+		}
+		log.Printf("%s %s %s from %s (%s, %s) %s", r.Method, r.URL.Path, r.Proto, a.IP, a.Family, src, time.Since(start))
 	})
 }
 
@@ -130,7 +136,8 @@ func main() {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if err := tmpl.Execute(w, pageData{Client: toAddr(pickIP(r))}); err != nil {
+		ip, _ := pickIP(r)
+		if err := tmpl.Execute(w, pageData{Client: toAddr(ip)}); err != nil {
 			log.Printf("render index: %v", err)
 		}
 	})
