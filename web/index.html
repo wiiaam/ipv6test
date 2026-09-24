@@ -12,18 +12,11 @@
   --text: #e6ecff;
   --muted: #93a0c8;
   --ok: #22c55e;
-  --fail: #ef4444;
-  --warn: #f59e0b;
-  --info: #38bdf8;
-  --ok-bg: rgba(34,197,94,.12);
-  --fail-bg: rgba(239,68,68,.12);
-  --warn-bg: rgba(245,158,11,.12);
   --radius: 16px;
 }
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f4f6fb; --card: #fff; --line: #dbe2f0; --text: #1a2340; --muted: #5b6890;
-    --ok-bg: rgba(34,197,94,.12); --fail-bg: rgba(239,68,68,.12); --warn-bg: rgba(245,158,11,.14);
   }
 }
 * { box-sizing: border-box; }
@@ -66,140 +59,24 @@ body {
 @media (prefers-color-scheme: light) { .addr { background: rgba(0,0,0,.04); } }
 .addr .k { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); font-weight: 600; }
 .addr .v { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: clamp(16px, 3.4vw, 24px); font-weight: 700; margin-top: 6px; word-break: break-all; }
-
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 18px; }
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.card .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.card h3 { margin: 0; font-size: 16px; font-weight: 650; }
-.card .detail { color: var(--muted); font-size: 13.5px; margin: 0; }
-
-.pill {
-  white-space: nowrap; border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
-  font-size: 11.5px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase;
-  padding: 3px 10px; display: inline-flex; align-items: center; gap: 6px;
-}
-.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.pill.run { color: var(--info); }
-.pill.run::before { animation: pulse 1s ease-in-out infinite; }
-.pill.ok { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
-.pill.fail { color: var(--fail); background: var(--fail-bg); border-color: transparent; }
-.pill.warn { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
-.pill.blocked { color: var(--info); background: rgba(56,189,248,.12); border-color: transparent; }
-@keyframes pulse { 50% { opacity: .25; } }
-
-code {
-  background: rgba(127,145,190,.15); border: 1px solid var(--line); border-radius: 6px;
-  padding: 1px 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: .92em; word-break: break-all;
-}
-footer { margin-top: 22px; text-align: center; color: var(--muted); font-size: 12.5px; display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
-button {
-  background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 10px;
-  font-size: 13.5px; font-weight: 600; padding: 8px 16px; cursor: pointer;
-}
-button:hover { border-color: var(--info); }
-button:disabled { opacity: .5; cursor: progress; }
-.hidden { display: none; }
+footer { margin-top: 22px; text-align: center; color: var(--muted); font-size: 12.5px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <main id="content" class="hidden">    <section class="hero">
+  <main>
+    <section class="hero">
       <div class="glow"></div>
       <div class="check">&#127881;</div>
       <h1>You have IPv6!</h1>
       <p class="sub">You reached this page over IPv6. It is only reachable over IPv6, so if you can see this, IPv6 works end to end.</p>
       <div class="addr">
-        <div class="k">Your IPv6 address</div>
+        <div class="k">Your IP address</div>
         <div class="v">{{ .Client.IP }}{{ if ne .Client.Family "ipv6" }} ({{ .Client.Family }}){{ end }}</div>
       </div>
     </section>
-
-    <section class="grid">
-      <article class="card" data-id="nat64">
-        <div class="head">
-          <h3>NAT64</h3>
-          <span class="pill run">running</span>
-        </div>
-        <p class="detail">Can this network reach an IPv4-only address through its NAT64 gateway?</p>
-      </article>
-    </section>
-
-    <footer>
-      <span id="meta">{{ .Client.Class }}{{ if .Client.Private }} / private{{ end }}</span>
-      <button id="rerun">Re-run</button>
-    </footer>
+    <footer>{{ .Client.Class }}{{ if .Client.Private }} / private{{ end }}</footer>
   </main>
 </div>
-
-<script>
-const $ = (s) => document.querySelector(s);
-const scheme = location.protocol;
-const TIMEOUT = 8000;
-
-const NAT64_TARGETS = ["64:ff9b::101:101", "64:ff9b::808:808"]; // 1.1.1.1, 8.8.8.8
-
-async function reachable(url, timeout = TIMEOUT) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeout);
-  try {
-    await fetch(url, { signal: ctl.signal, mode: "no-cors", cache: "no-store" });
-    return true;
-  } catch (e) {
-    return false;
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
-
-function setCard(id, status, label, detail) {
-  const card = document.querySelector(`[data-id="${id}"]`);
-  card.querySelector(".pill").className = `pill ${status}`;
-  card.querySelector(".pill").textContent = label;
-  card.querySelector(".detail").innerHTML = detail;
-}
-
-async function testNAT64() {
-  const results = [];
-  for (const addr of NAT64_TARGETS) {
-    const ok = await reachable(`${scheme}//[${addr}]/`);
-    results.push({ addr, ok });
-    if (ok) break;
-  }
-  const win = results.find((r) => r.ok);
-  if (win) {
-    setCard("nat64", "ok", "pass",
-      `Reached <code>[${esc(win.addr)}]</code> — an IPv4-only address. The request went over IPv6 and was translated by your NAT64 gateway.`);
-    return;
-  }
-  setCard("nat64", "fail", "fail",
-    `No target answered. Tried ${NAT64_TARGETS.map((a) => `<code>${esc(a)}</code>`).join(", ")} under the well-known prefix <code>64:ff9b::/96</code>. NAT64 does not appear to be available on this network.`);
-}
-
-async function main() {
-  $("#rerun").disabled = true;
-  $("#content").classList.remove("hidden");
-
-  setCard("nat64", "run", "running", "");
-  await testNAT64();
-
-  $("#rerun").disabled = false;
-  $("#rerun").onclick = () => main();
-}
-
-main();
-</script>
 </body>
 </html>
